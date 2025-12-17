@@ -1,0 +1,1105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Weekly Goal Tracker (Local)</title>
+  <meta name="theme-color" content="#0ea5e9" />
+  <style>
+    :root{
+      --bg:#0b1220; --panel:#0f1b2e; --card:#111f36;
+      --muted:#93a4bf; --text:#e8f0ff; --line:rgba(255,255,255,.08);
+      --accent:#0ea5e9; --good:#22c55e; --warn:#f59e0b; --bad:#ef4444;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius:18px; --radius2:14px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background:
+        radial-gradient(1200px 700px at 15% 0%, rgba(14,165,233,.20), transparent 60%),
+        radial-gradient(900px 600px at 100% 25%, rgba(34,197,94,.14), transparent 55%),
+        radial-gradient(800px 500px at 40% 100%, rgba(245,158,11,.10), transparent 55%),
+        var(--bg);
+      color:var(--text);
+    }
+    .wrap{ max-width:1100px; margin:0 auto; padding:18px; }
+    header{
+      display:flex; gap:12px; align-items:flex-start; justify-content:space-between;
+      flex-wrap:wrap; margin:10px 0 18px;
+    }
+    .title{ display:flex; gap:12px; align-items:center; }
+    .badge{
+      width:42px;height:42px;border-radius:14px; display:grid;place-items:center;
+      background:linear-gradient(135deg, rgba(14,165,233,.25), rgba(34,197,94,.20));
+      border:1px solid var(--line); box-shadow: var(--shadow); font-weight:900;
+    }
+    h1{ margin:0; font-size:18px; }
+    .sub{ margin:2px 0 0; color:var(--muted); font-size:13px; }
+    .actions{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:flex-end; }
+    button, .btn{
+      appearance:none; border:1px solid var(--line); background:rgba(255,255,255,.04);
+      color:var(--text); padding:10px 12px; border-radius:14px; cursor:pointer;
+      transition: transform .06s ease, background .15s ease, border-color .15s ease;
+      font-weight:650; font-size:13px;
+    }
+    button:hover,.btn:hover{ background:rgba(255,255,255,.07); border-color:rgba(255,255,255,.14) }
+    button:active,.btn:active{ transform: translateY(1px) }
+    .primary{
+      background:linear-gradient(135deg, rgba(14,165,233,.75), rgba(14,165,233,.45));
+      border-color: rgba(14,165,233,.55);
+    }
+    .danger{ border-color: rgba(239,68,68,.35); }
+
+    .grid{ display:grid; grid-template-columns: 1.1fr .9fr; gap:14px; align-items:start; }
+    @media (max-width: 980px){ .grid{ grid-template-columns:1fr; } }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.02));
+      border:1px solid var(--line); border-radius: var(--radius);
+      box-shadow: var(--shadow); overflow:hidden;
+    }
+    .card-h{
+      padding:14px 16px; display:flex; align-items:center; justify-content:space-between;
+      border-bottom:1px solid var(--line); gap:10px;
+    }
+    .card-h strong{ font-size:14px }
+    .card-b{ padding:16px; }
+
+    input, select, textarea{
+      width:100%;
+      border:1px solid var(--line);
+      border-radius: 14px;
+      padding:10px 12px;
+      background:rgba(255,255,255,.03);
+      color:var(--text);
+      outline:none;
+      font-size:13px;
+    }
+    textarea{ resize:vertical; min-height:44px; }
+
+    .row{ display:grid; grid-template-columns: 1.2fr .9fr .9fr auto; gap:10px; align-items:center; }
+    @media (max-width: 820px){ .row{ grid-template-columns:1fr; gap:8px; } }
+
+    .muted{ color:var(--muted); font-size:12px; }
+    .filters{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .filters > *{ flex: 1 1 220px; }
+
+    .kpis{ display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; }
+    @media (max-width: 560px){ .kpis{ grid-template-columns:1fr; } }
+    .kpi{
+      background:rgba(17,31,54,.75);
+      border:1px solid var(--line);
+      border-radius: 14px;
+      padding:12px;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      min-height:86px;
+    }
+    .kpi .label{ color:var(--muted); font-size:12px }
+    .kpi .value{ font-size:22px; font-weight:850; letter-spacing:.2px }
+    .bar{
+      height:12px; border-radius: 999px;
+      background:rgba(255,255,255,.06); border:1px solid var(--line);
+      overflow:hidden;
+    }
+    .bar > i{
+      display:block; height:100%; width:0%;
+      background:linear-gradient(90deg, rgba(34,197,94,.85), rgba(14,165,233,.75));
+      border-radius:999px;
+    }
+
+    .list{ display:flex; flex-direction:column; gap:10px; }
+    .goal{
+      border:1px solid var(--line);
+      background: rgba(17,31,54,.55);
+      border-radius: 14px;
+      padding:12px;
+    }
+    .goal-top{
+      display:flex; gap:10px; justify-content:space-between; align-items:flex-start; flex-wrap:wrap;
+    }
+    .goal h3{ margin:0; font-size:14px; }
+    .goal p{ margin:6px 0 0; color:var(--muted); font-size:12px; white-space:pre-wrap; line-height:1.35; }
+    .meta{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+    .pill{
+      font-size:11px; color:var(--muted);
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.03);
+      padding:4px 8px;
+      border-radius:999px;
+    }
+    .pill.good{ border-color: rgba(34,197,94,.35); color: rgba(170,255,205,.92) }
+    .pill.warn{ border-color: rgba(245,158,11,.35); color: rgba(255,226,170,.95) }
+    .pill.bad{ border-color: rgba(239,68,68,.35); color: rgba(255,190,190,.95) }
+
+    details{
+      margin-top:10px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:rgba(255,255,255,.02);
+      overflow:hidden;
+    }
+    summary{
+      cursor:pointer;
+      padding:10px 12px;
+      list-style:none;
+      display:flex; justify-content:space-between; align-items:center;
+      gap:10px;
+      user-select:none;
+    }
+    summary::-webkit-details-marker{ display:none; }
+    .section{
+      padding:12px;
+      border-top:1px solid var(--line);
+      display:grid;
+      gap:10px;
+    }
+    .section .row5{ display:grid; grid-template-columns: 1.2fr 1fr 1fr 1fr 1fr; gap:10px; }
+    @media (max-width: 900px){ .section .row5{ grid-template-columns:1fr; } }
+    .section .row3{ display:grid; grid-template-columns: 1.2fr 1fr 1fr; gap:10px; }
+    @media (max-width: 820px){ .section .row3{ grid-template-columns:1fr; } }
+
+    .goal-actions{ display:flex; gap:8px; }
+    canvas{ width:100%; height:220px; display:block; }
+    .split{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+    @media (max-width: 560px){ .split{ grid-template-columns:1fr; } }
+    .foot{ margin:14px 0 8px; color:var(--muted); font-size:12px; text-align:center; }
+
+    dialog{
+      border:1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(10,18,32,.95);
+      color:var(--text);
+      box-shadow: var(--shadow);
+      width:min(720px, 92vw);
+    }
+    dialog::backdrop{ background: rgba(0,0,0,.55); }
+    .dlg-h{ display:flex; justify-content:space-between; align-items:center; padding:14px 16px; border-bottom:1px solid var(--line); }
+    .dlg-b{ padding:14px 16px; }
+    .dlg-b pre{
+      margin:0; padding:12px;
+      border-radius:14px; border:1px solid var(--line);
+      background: rgba(255,255,255,.03);
+      overflow:auto; max-height: 45vh; font-size:12px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <header>
+      <div class="title">
+        <div class="badge">📅</div>
+        <div>
+          <h1>Weekly Goal Tracker</h1>
+          <div class="sub">Monday Plan • Wednesday Check-in • Friday Recap • Stored Locally</div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="btnExport">Export JSON</button>
+        <label class="btn" for="fileImport">Import JSON</label>
+        <input id="fileImport" type="file" accept="application/json" style="display:none;" />
+        <button id="btnClear" class="danger">Reset</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- LEFT: Goals -->
+      <section class="card">
+        <div class="card-h">
+          <strong>Goals (by Week Start)</strong>
+          <span class="muted" id="lastSaved">—</span>
+        </div>
+        <div class="card-b">
+          <div class="row" style="margin-bottom:10px;">
+            <!-- Goal Title FIRST (consistency requirement) -->
+            <input id="mTitle" placeholder="Goal Title (unique for this Monday/week)" />
+            <input id="mWeekStart" type="date" />
+            <input id="mChampion" placeholder="Success Driver Champion" />
+            <button id="btnAdd" class="primary">Add Monday</button>
+          </div>
+
+          <textarea id="mDesc" placeholder="Description / high-level overview (Monday)"></textarea>
+
+          <div class="filters" style="margin-top:12px; margin-bottom:12px;">
+            <input id="fSearch" placeholder="Search title / text…" />
+            <select id="fWeek">
+              <option value="all">All weeks</option>
+              <option value="this">This week</option>
+              <option value="last">Last week</option>
+            </select>
+            <select id="fStatus">
+              <option value="all">All statuses</option>
+              <option value="needs_wed">Needs Wednesday</option>
+              <option value="needs_fri">Needs Friday</option>
+              <option value="complete">Mon+Wed+Fri complete</option>
+            </select>
+          </div>
+
+          <div class="list" id="goalList"></div>
+          <div class="muted" id="emptyState" style="display:none; margin-top:10px;">
+            Nothing matches. Either you’re crushing it… or the filters are being dramatic.
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT: Metrics -->
+      <aside class="card">
+        <div class="card-h">
+          <strong>Visual Metrics</strong>
+          <span class="muted" id="todayTag"></span>
+        </div>
+        <div class="card-b">
+          <div class="kpis" style="margin-bottom:12px;">
+            <div class="kpi">
+              <div class="label">Weekly completion</div>
+              <div class="value" id="kpiCompletion">0%</div>
+              <div class="bar"><i id="barCompletion"></i></div>
+            </div>
+            <div class="kpi">
+              <div class="label">Open checkpoints</div>
+              <div class="value" id="kpiOpen">0</div>
+              <div class="muted" id="kpiHint">—</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Needs adjustment</div>
+              <div class="value" id="kpiAdjust">0</div>
+              <div class="muted">Wed check-ins marked “Yes”</div>
+            </div>
+          </div>
+
+          <div class="split">
+            <div class="card" style="border-radius:14px; box-shadow:none;">
+              <div class="card-h" style="border-radius:14px;">
+                <strong style="font-size:13px;">Weekly Progress</strong>
+                <span class="muted" id="donutLabel">—</span>
+              </div>
+              <div class="card-b" style="padding:12px;">
+                <canvas id="donut" width="500" height="260"></canvas>
+              </div>
+            </div>
+
+            <div class="card" style="border-radius:14px; box-shadow:none;">
+              <div class="card-h" style="border-radius:14px;">
+                <strong style="font-size:13px;">This-week breakdown</strong>
+                <span class="muted" id="barLabel">—</span>
+              </div>
+              <div class="card-b" style="padding:12px;">
+                <canvas id="bars" width="500" height="260"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:12px;">
+            <button id="btnRecap">Generate Weekly Recap (all goals)</button>
+            <div class="muted" style="margin-top:8px;">
+              Pro Tip: A goal without a Wednesday check-in is a Monday dream with a Friday surprise.
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="foot">Offline/localStorage. Export JSON for backup or moving between devices.</div>
+  </div>
+
+  <dialog id="dlg">
+    <div class="dlg-h">
+      <strong id="dlgTitle">Export</strong>
+      <button id="dlgClose">Close</button>
+    </div>
+    <div class="dlg-b">
+      <div class="muted" style="margin-bottom:10px;" id="dlgHint"></div>
+      <pre id="dlgContent"></pre>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
+        <button id="btnCopy" class="primary">Copy</button>
+        <button id="btnDownload">Download .json</button>
+      </div>
+    </div>
+  </dialog>
+
+<script>
+(() => {
+  const STORAGE_KEY = "weekly_goal_tracker_v1";
+  const META_KEY = "weekly_goal_tracker_meta_v1";
+
+  const $ = (id) => document.getElementById(id);
+
+  const els = {
+    // Monday
+    mTitle: $("mTitle"),
+    mDesc: $("mDesc"),
+    mWeekStart: $("mWeekStart"),
+    mChampion: $("mChampion"),
+    btnAdd: $("btnAdd"),
+
+    // Filters
+    fSearch: $("fSearch"),
+    fWeek: $("fWeek"),
+    fStatus: $("fStatus"),
+
+    // List
+    goalList: $("goalList"),
+    emptyState: $("emptyState"),
+
+    // Metrics
+    kpiCompletion: $("kpiCompletion"),
+    barCompletion: $("barCompletion"),
+    kpiOpen: $("kpiOpen"),
+    kpiHint: $("kpiHint"),
+    kpiAdjust: $("kpiAdjust"),
+    donut: $("donut"),
+    bars: $("bars"),
+    donutLabel: $("donutLabel"),
+    barLabel: $("barLabel"),
+
+    // Actions
+    btnExport: $("btnExport"),
+    fileImport: $("fileImport"),
+    btnClear: $("btnClear"),
+    btnRecap: $("btnRecap"),
+
+    // Dialog
+    dlg: $("dlg"),
+    dlgTitle: $("dlgTitle"),
+    dlgHint: $("dlgHint"),
+    dlgContent: $("dlgContent"),
+    dlgClose: $("dlgClose"),
+    btnCopy: $("btnCopy"),
+    btnDownload: $("btnDownload"),
+
+    // Meta
+    lastSaved: $("lastSaved"),
+    todayTag: $("todayTag"),
+  };
+
+  function nowISO(){ return new Date().toISOString(); }
+  function ymd(d){
+    const pad = (n)=>String(n).padStart(2,"0");
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  }
+  function getMondayOf(d){
+    const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const day = x.getDay(); // Sun=0..Sat=6
+    const diff = (day === 0 ? -6 : 1 - day); // move to Monday
+    x.setDate(x.getDate() + diff);
+    return x;
+  }
+  function thisWeekMondayYMD(){ return ymd(getMondayOf(new Date())); }
+  function lastWeekMondayYMD(){
+    const m = getMondayOf(new Date());
+    m.setDate(m.getDate() - 7);
+    return ymd(m);
+  }
+  function fmtShort(iso){
+    if (!iso) return "—";
+    const d = new Date(iso);
+    return d.toLocaleDateString(undefined, { month:"short", day:"2-digit" });
+  }
+  function safeTrim(s){ return String(s || "").trim(); }
+
+  function load(){
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const goals = raw ? JSON.parse(raw) : [];
+    const metaRaw = localStorage.getItem(META_KEY);
+    const meta = metaRaw ? JSON.parse(metaRaw) : { lastSaved: null };
+    return { goals, meta };
+  }
+  function save(goals){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(goals));
+    const meta = { lastSaved: nowISO() };
+    localStorage.setItem(META_KEY, JSON.stringify(meta));
+    els.lastSaved.textContent = `Saved: ${new Date(meta.lastSaved).toLocaleString()}`;
+  }
+
+  // Unique per week = weekStartDate + goalTitle
+  function makeKey(weekStartDate, goalTitle){
+    return `${weekStartDate}__${goalTitle.toLowerCase()}`;
+  }
+
+  function addMonday(){
+    const title = safeTrim(els.mTitle.value);
+    const desc = safeTrim(els.mDesc.value);
+    const weekStart = els.mWeekStart.value || thisWeekMondayYMD();
+    const champion = safeTrim(els.mChampion.value);
+
+    if (!title){ els.mTitle.focus(); return; }
+
+    const { goals } = load();
+    const key = makeKey(weekStart, title);
+
+    if (goals.some(g => g.key === key)){
+      alert("That Goal Title already exists for this Week Start Date.\n(Unique = Monday/week + Goal Title)");
+      return;
+    }
+
+    goals.unshift({
+      key,
+      monday: {
+        goalTitle: title,
+        description: desc,
+        weekStartDate: weekStart,
+        champion: champion
+      },
+      wednesday: {
+        goalTitle: title,
+        checkinSummary: "",
+        checkinDate: "",
+        progressSummary: "",
+        needsAdjustment: "No"
+      },
+      friday: {
+        goalTitle: title,
+        recapSummary: "",
+        carryoverItems: "",
+        teamLeaderFeedback: "",
+        recapDate: "",
+        accomplishments: ""
+      },
+      createdAt: nowISO(),
+      updatedAt: nowISO()
+    });
+
+    save(goals);
+    els.mTitle.value = "";
+    els.mDesc.value = "";
+    els.mWeekStart.value = "";
+    els.mChampion.value = "";
+    render();
+  }
+
+  function updateSection(key, section, patch){
+    const { goals } = load();
+    const g = goals.find(x => x.key === key);
+    if (!g) return;
+
+    // Ensure goalTitle stays first and consistent (tidy requirement)
+    if (patch.goalTitle && patch.goalTitle !== g.monday.goalTitle){
+      // rename across sections + re-key
+      const newTitle = safeTrim(patch.goalTitle) || g.monday.goalTitle;
+      const weekStart = g.monday.weekStartDate;
+      const newKey = makeKey(weekStart, newTitle);
+      if (newKey !== key && goals.some(x => x.key === newKey)){
+        alert("Rename blocked: that Goal Title already exists for this Monday/week.");
+        return;
+      }
+      g.monday.goalTitle = newTitle;
+      g.wednesday.goalTitle = newTitle;
+      g.friday.goalTitle = newTitle;
+      g.key = newKey;
+      key = newKey; // update caller scope
+    }
+
+    Object.assign(g[section], patch);
+    g.updatedAt = nowISO();
+    save(goals);
+    render();
+  }
+
+  function deleteGoal(key){
+    const ok = confirm("Delete this goal (all Mon/Wed/Fri entries)?");
+    if (!ok) return;
+    const { goals } = load();
+    save(goals.filter(g => g.key !== key));
+    render();
+  }
+
+  function statusFor(g){
+    const wedDone = !!safeTrim(g.wednesday.checkinSummary) || !!safeTrim(g.wednesday.progressSummary) || !!g.wednesday.checkinDate;
+    const friDone = !!safeTrim(g.friday.recapSummary) || !!safeTrim(g.friday.accomplishments) || !!g.friday.recapDate;
+    if (wedDone && friDone) return "complete";
+    if (!wedDone) return "needs_wed";
+    return "needs_fri";
+  }
+
+  function pillsFor(g){
+    const st = statusFor(g);
+    const p = [];
+    p.push({ text: `Week: ${g.monday.weekStartDate}`, cls:"" });
+    p.push({ text: `Champion: ${g.monday.champion || "—"}`, cls:"" });
+
+    if (st === "complete") p.push({ text: "Mon/Wed/Fri complete", cls:"good" });
+    if (st === "needs_wed") p.push({ text: "Needs Wednesday", cls:"warn" });
+    if (st === "needs_fri") p.push({ text: "Needs Friday", cls:"warn" });
+
+    const adj = (g.wednesday.needsAdjustment || "No").toLowerCase() === "yes";
+    if (adj) p.push({ text: "Needs adjustment: YES", cls:"bad" });
+
+    const upd = new Date(g.updatedAt).toLocaleDateString();
+    p.push({ text: `Updated: ${upd}`, cls:"" });
+
+    return p;
+  }
+
+  function filtered(goals){
+    const q = safeTrim(els.fSearch.value).toLowerCase();
+    const wk = els.fWeek.value;
+    const st = els.fStatus.value;
+
+    let out = goals.slice();
+
+    if (q){
+      out = out.filter(g => {
+        const blob = JSON.stringify(g).toLowerCase();
+        return blob.includes(q);
+      });
+    }
+
+    if (wk !== "all"){
+      const target = wk === "this" ? thisWeekMondayYMD() : lastWeekMondayYMD();
+      out = out.filter(g => g.monday.weekStartDate === target);
+    }
+
+    if (st !== "all"){
+      out = out.filter(g => statusFor(g) === st);
+    }
+
+    // newest updated first
+    out.sort((a,b)=> new Date(b.updatedAt) - new Date(a.updatedAt));
+    return out;
+  }
+
+  function renderList(goals){
+    els.goalList.innerHTML = "";
+    const out = filtered(goals);
+    els.emptyState.style.display = out.length ? "none" : "block";
+
+    for (const g of out){
+      const div = document.createElement("div");
+      div.className = "goal";
+
+      // top row: title + actions
+      const top = document.createElement("div");
+      top.className = "goal-top";
+
+      const left = document.createElement("div");
+      const h = document.createElement("h3");
+      h.textContent = g.monday.goalTitle; // Goal Title always first
+      const p = document.createElement("p");
+      p.textContent = g.monday.description || "";
+      left.append(h,p);
+
+      const acts = document.createElement("div");
+      acts.className = "goal-actions";
+      const btnRename = document.createElement("button");
+      btnRename.textContent = "Rename";
+      btnRename.addEventListener("click", () => {
+        const nt = prompt("New Goal Title (unique for this Monday/week):", g.monday.goalTitle);
+        if (nt === null) return;
+        updateSection(g.key, "monday", { goalTitle: nt });
+      });
+
+      const btnDelete = document.createElement("button");
+      btnDelete.textContent = "Delete";
+      btnDelete.addEventListener("click", () => deleteGoal(g.key));
+
+      acts.append(btnRename, btnDelete);
+
+      top.append(left, acts);
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      for (const pill of pillsFor(g)){
+        const s = document.createElement("span");
+        s.className = "pill " + (pill.cls || "");
+        s.textContent = pill.text;
+        meta.append(s);
+      }
+
+      // Monday details
+      const dMon = document.createElement("details");
+      dMon.open = false;
+      const sMon = document.createElement("summary");
+      sMon.innerHTML = `<span><strong>Monday</strong> - Plan</span><span class="muted">Week start: ${g.monday.weekStartDate}</span>`;
+      const mon = document.createElement("div");
+      mon.className = "section";
+      mon.innerHTML = `
+        <div class="row3">
+          <div>
+            <div class="muted">Goal Title (first)</div>
+            <input value="${escapeHtml(g.monday.goalTitle)}" data-k="goalTitle" />
+          </div>
+          <div>
+            <div class="muted">Week start date</div>
+            <input type="date" value="${escapeHtml(g.monday.weekStartDate)}" data-k="weekStartDate" />
+          </div>
+          <div>
+            <div class="muted">Success Driver Champion</div>
+            <input value="${escapeHtml(g.monday.champion || "")}" data-k="champion" />
+          </div>
+        </div>
+        <div>
+          <div class="muted">Description / high-level overview</div>
+          <textarea data-k="description">${escapeHtml(g.monday.description || "")}</textarea>
+        </div>
+        <button class="primary" data-save="monday">Save Monday</button>
+      `;
+      dMon.append(sMon, mon);
+
+      // Wednesday details
+      const dWed = document.createElement("details");
+      dWed.open = false;
+      const sWed = document.createElement("summary");
+      const adj = (g.wednesday.needsAdjustment || "No").toLowerCase() === "yes" ? "• Needs adjustment: YES" : "";
+      sWed.innerHTML = `<span><strong>Wednesday</strong> - Check-in</span><span class="muted">${g.wednesday.checkinDate ? "Check-in: "+g.wednesday.checkinDate : "—"} ${adj}</span>`;
+      const wed = document.createElement("div");
+      wed.className = "section";
+      wed.innerHTML = `
+        <div class="row5">
+          <div>
+            <div class="muted">Goal Title (first)</div>
+            <input value="${escapeHtml(g.wednesday.goalTitle)}" data-k="goalTitle" />
+          </div>
+          <div>
+            <div class="muted">Check-in date</div>
+            <input type="date" value="${escapeHtml(g.wednesday.checkinDate || "")}" data-k="checkinDate" />
+          </div>
+          <div style="grid-column: span 3;">
+            <div class="muted">Check-in summary</div>
+            <input value="${escapeHtml(g.wednesday.checkinSummary || "")}" data-k="checkinSummary" />
+          </div>
+        </div>
+        <div class="row3">
+          <div style="grid-column: span 2;">
+            <div class="muted">Progress summary</div>
+            <textarea data-k="progressSummary">${escapeHtml(g.wednesday.progressSummary || "")}</textarea>
+          </div>
+          <div>
+            <div class="muted">Needs adjustment?</div>
+            <select data-k="needsAdjustment">
+              <option ${sel(g.wednesday.needsAdjustment,"No")}>No</option>
+              <option ${sel(g.wednesday.needsAdjustment,"Yes")}>Yes</option>
+            </select>
+          </div>
+        </div>
+        <button class="primary" data-save="wednesday">Save Wednesday</button>
+      `;
+      dWed.append(sWed, wed);
+
+      // Friday details
+      const dFri = document.createElement("details");
+      dFri.open = false;
+      const sFri = document.createElement("summary");
+      sFri.innerHTML = `<span><strong>Friday</strong> - Recap</span><span class="muted">${g.friday.recapDate ? "Recap: "+g.friday.recapDate : "—"}</span>`;
+      const fri = document.createElement("div");
+      fri.className = "section";
+      fri.innerHTML = `
+        <div class="row5">
+          <div>
+            <div class="muted">Goal Title (first)</div>
+            <input value="${escapeHtml(g.friday.goalTitle)}" data-k="goalTitle" />
+          </div>
+          <div>
+            <div class="muted">Recap date</div>
+            <input type="date" value="${escapeHtml(g.friday.recapDate || "")}" data-k="recapDate" />
+          </div>
+          <div style="grid-column: span 3;">
+            <div class="muted">Recap summary</div>
+            <input value="${escapeHtml(g.friday.recapSummary || "")}" data-k="recapSummary" />
+          </div>
+        </div>
+        <div class="row3">
+          <div>
+            <div class="muted">Accomplishments</div>
+            <textarea data-k="accomplishments">${escapeHtml(g.friday.accomplishments || "")}</textarea>
+          </div>
+          <div>
+            <div class="muted">Carryover items</div>
+            <textarea data-k="carryoverItems">${escapeHtml(g.friday.carryoverItems || "")}</textarea>
+          </div>
+          <div>
+            <div class="muted">Team leader feedback</div>
+            <textarea data-k="teamLeaderFeedback">${escapeHtml(g.friday.teamLeaderFeedback || "")}</textarea>
+          </div>
+        </div>
+        <button class="primary" data-save="friday">Save Friday</button>
+      `;
+      dFri.append(sFri, fri);
+
+      // Wire save buttons per goal card
+      div.addEventListener("click", (e) => {
+        const btn = e.target.closest("button[data-save]");
+        if (!btn) return;
+        const section = btn.getAttribute("data-save");
+        const sectionEl = btn.closest(".section");
+        const patch = {};
+        sectionEl.querySelectorAll("input[data-k], textarea[data-k], select[data-k]").forEach(inp => {
+          patch[inp.getAttribute("data-k")] = inp.value;
+        });
+
+        // Special: if weekStartDate changes on Monday, that impacts uniqueness key
+        if (section === "monday") {
+          const { goals } = load();
+          const current = goals.find(x => x.key === g.key);
+          if (!current) return;
+
+          const newTitle = safeTrim(patch.goalTitle) || current.monday.goalTitle;
+          const newWeek = patch.weekStartDate || current.monday.weekStartDate;
+          const newKey = makeKey(newWeek, newTitle);
+
+          if (newKey !== current.key && goals.some(x => x.key === newKey)) {
+            alert("Change blocked: that Goal Title already exists for that Monday/week.");
+            return;
+          }
+          // apply changes + propagate
+          current.monday.goalTitle = newTitle;
+          current.monday.description = patch.description || "";
+          current.monday.weekStartDate = newWeek;
+          current.monday.champion = patch.champion || "";
+          current.wednesday.goalTitle = newTitle;
+          current.friday.goalTitle = newTitle;
+          current.key = newKey;
+          current.updatedAt = nowISO();
+          save(goals);
+          render();
+          return;
+        }
+
+        updateSection(g.key, section, patch);
+      });
+
+      div.append(top, meta, dMon, dWed, dFri);
+      els.goalList.append(div);
+    }
+  }
+
+  function escapeHtml(str){
+    return String(str ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+  function sel(current, v){
+    return (String(current||"No").toLowerCase() === v.toLowerCase()) ? "selected" : "";
+  }
+
+  function computeMetrics(goals){
+    // Each goal has 3 checkpoints: Monday always exists; Wed and Fri considered "done" if any key field filled OR date set.
+    const totalGoals = goals.length;
+    const totalCheckpoints = totalGoals * 3;
+
+    const monDone = totalGoals; // by definition, goal exists
+    const wedDone = goals.filter(g => {
+      const w = g.wednesday;
+      return !!safeTrim(w.checkinSummary) || !!safeTrim(w.progressSummary) || !!w.checkinDate;
+    }).length;
+
+    const friDone = goals.filter(g => {
+      const f = g.friday;
+      return !!safeTrim(f.recapSummary) || !!safeTrim(f.accomplishments) || !!f.recapDate;
+    }).length;
+
+    const done = monDone + wedDone + friDone;
+    const open = totalCheckpoints - done;
+
+    const pct = totalCheckpoints ? Math.round((done / totalCheckpoints) * 100) : 0;
+    els.kpiCompletion.textContent = `${pct}%`;
+    els.barCompletion.style.width = `${pct}%`;
+    els.kpiOpen.textContent = String(open);
+
+    const needsAdj = goals.filter(g => String(g.wednesday.needsAdjustment||"No").toLowerCase() === "yes").length;
+    els.kpiAdjust.textContent = String(needsAdj);
+
+    // Hint: what’s most missing?
+    const missingWed = totalGoals - wedDone;
+    const missingFri = totalGoals - friDone;
+    els.kpiHint.textContent =
+      totalGoals === 0 ? "Add a Monday goal to start." :
+      missingWed >= missingFri ? `Missing Wednesday check-ins: ${missingWed}` : `Missing Friday recaps: ${missingFri}`;
+
+    drawDonut(monDone, wedDone, friDone, totalGoals);
+    drawThisWeekBars(goals);
+  }
+
+  function drawDonut(monDone, wedDone, friDone, totalGoals){
+    const c = els.donut, ctx = c.getContext("2d");
+    const W=c.width, H=c.height;
+    ctx.clearRect(0,0,W,H);
+
+    const mon = totalGoals ? monDone/totalGoals : 0;
+    const wed = totalGoals ? wedDone/totalGoals : 0;
+    const fri = totalGoals ? friDone/totalGoals : 0;
+
+    els.donutLabel.textContent = `${totalGoals} goals • checkpoints done: Mon ${monDone}, Wed ${wedDone}, Fri ${friDone}`;
+
+    const centerX=W/2, centerY=H/2;
+    const rOuter=Math.min(W,H)*0.34;
+    const rInner=rOuter*0.62;
+
+    // background ring
+    ctx.beginPath();
+    ctx.strokeStyle="rgba(255,255,255,.06)";
+    ctx.lineWidth=rOuter-rInner;
+    ctx.arc(centerX, centerY, (rOuter+rInner)/2, 0, 2*Math.PI);
+    ctx.stroke();
+
+    let a = -Math.PI/2;
+    const segs = [
+      { frac: mon, color:"rgba(14,165,233,.80)", label:"Mon" },
+      { frac: wed, color:"rgba(245,158,11,.80)", label:"Wed" },
+      { frac: fri, color:"rgba(34,197,94,.85)", label:"Fri" },
+    ];
+
+    for (const s of segs){
+      ctx.beginPath();
+      ctx.strokeStyle = s.color;
+      ctx.lineWidth = rOuter-rInner;
+      ctx.lineCap = "round";
+      ctx.arc(centerX, centerY, (rOuter+rInner)/2, a, a + s.frac*2*Math.PI);
+      ctx.stroke();
+      a += s.frac*2*Math.PI;
+    }
+
+    // center text: overall checkpoint completion
+    const totalCheckpoints = totalGoals * 3;
+    const done = (totalGoals) + wedDone + friDone;
+    const pct = totalCheckpoints ? Math.round((done/totalCheckpoints)*100) : 0;
+
+    ctx.fillStyle="rgba(232,240,255,.92)";
+    ctx.font="800 36px ui-sans-serif, system-ui";
+    ctx.textAlign="center"; ctx.textBaseline="middle";
+    ctx.fillText(`${pct}%`, centerX, centerY-6);
+    ctx.fillStyle="rgba(147,164,191,.95)";
+    ctx.font="600 13px ui-sans-serif, system-ui";
+    ctx.fillText("checkpoint completion", centerX, centerY+26);
+  }
+
+  function drawThisWeekBars(goals){
+    const c = els.bars, ctx = c.getContext("2d");
+    const W=c.width, H=c.height;
+    ctx.clearRect(0,0,W,H);
+
+    const thisMon = thisWeekMondayYMD();
+    const weekGoals = goals.filter(g => g.monday.weekStartDate === thisMon);
+
+    const total = weekGoals.length || 0;
+    const wed = weekGoals.filter(g => !!safeTrim(g.wednesday.checkinSummary) || !!safeTrim(g.wednesday.progressSummary) || !!g.wednesday.checkinDate).length;
+    const fri = weekGoals.filter(g => !!safeTrim(g.friday.recapSummary) || !!safeTrim(g.friday.accomplishments) || !!g.friday.recapDate).length;
+
+    els.barLabel.textContent = total ? `${total} goals this week (${thisMon})` : `No goals for ${thisMon}`;
+
+    const labels = ["Goals", "Wed done", "Fri done"];
+    const values = [total, wed, fri];
+    const max = Math.max(1, ...values);
+
+    const pad=28, gap=(W-pad*2)/labels.length, barW=gap*0.62;
+
+    ctx.strokeStyle="rgba(255,255,255,.08)";
+    ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(pad, H-44); ctx.lineTo(W-pad, H-44); ctx.stroke();
+
+    ctx.font="600 12px ui-sans-serif, system-ui";
+    ctx.textAlign="center";
+
+    labels.forEach((lab,i)=>{
+      const x = pad + gap*i + gap/2;
+      const h = Math.round((values[i]/max)*(H-90));
+      const y = (H-44) - h;
+
+      ctx.fillStyle="rgba(14,165,233,.55)";
+      ctx.fillRect(x-barW/2, y, barW, h);
+
+      ctx.fillStyle="rgba(232,240,255,.92)";
+      ctx.fillText(String(values[i]), x, y-10);
+
+      ctx.fillStyle="rgba(147,164,191,.95)";
+      ctx.fillText(lab, x, H-20);
+    });
+  }
+
+  function showDialog(title, hint, content){
+    els.dlgTitle.textContent = title;
+    els.dlgHint.textContent = hint || "";
+    els.dlgContent.textContent = content || "";
+    els.dlg.showModal();
+  }
+
+  function exportJSON(){
+    const { goals } = load();
+    const payload = { version: 1, exportedAt: nowISO(), goals };
+    const text = JSON.stringify(payload, null, 2);
+    showDialog("Export JSON", "Copy or download this backup file.", text);
+  }
+
+  function downloadJSON(text){
+    const blob = new Blob([text], { type:"application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `weekly-goal-tracker-${ymd(new Date())}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 1500);
+  }
+
+  async function copyToClipboard(text){
+    try { await navigator.clipboard.writeText(text); alert("TGIF Champion!"); }
+    catch {
+      const ta = document.createElement("textarea");
+      ta.value = text; document.body.appendChild(ta);
+      ta.select(); document.execCommand("copy");
+      ta.remove(); alert("TGIF Champion!");
+    }
+  }
+
+  function importJSONFile(file){
+    const reader = new FileReader();
+    reader.onload = () => {
+      try{
+        const data = JSON.parse(reader.result);
+        if (!data || !Array.isArray(data.goals)) throw new Error("Invalid file.");
+        // minimal normalization
+        const goals = data.goals.map(g => {
+          const monday = g.monday || {};
+          const title = safeTrim(monday.goalTitle || g?.wednesday?.goalTitle || g?.friday?.goalTitle || "Untitled");
+          const week = monday.weekStartDate || thisWeekMondayYMD();
+          return {
+            key: makeKey(week, title),
+            monday: {
+              goalTitle: title,
+              description: monday.description || "",
+              weekStartDate: week,
+              champion: monday.champion || ""
+            },
+            wednesday: Object.assign({
+              goalTitle: title,
+              checkinSummary: "",
+              checkinDate: "",
+              progressSummary: "",
+              needsAdjustment: "No"
+            }, g.wednesday || {}, { goalTitle: title }),
+            friday: Object.assign({
+              goalTitle: title,
+              recapSummary: "",
+              carryoverItems: "",
+              teamLeaderFeedback: "",
+              recapDate: "",
+              accomplishments: ""
+            }, g.friday || {}, { goalTitle: title }),
+            createdAt: g.createdAt || nowISO(),
+            updatedAt: nowISO()
+          };
+        });
+
+        // de-dupe by key (last one wins)
+        const map = new Map();
+        for (const g of goals) map.set(g.key, g);
+        save(Array.from(map.values()));
+        render();
+        alert("Import complete.");
+      } catch(e){
+        alert("Import failed: " + e.message);
+      } finally {
+        els.fileImport.value = "";
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function generateWeeklyRecap(){
+    const { goals } = load();
+    if (!goals.length){
+      showDialog("Weekly Recap", "Nothing to recap yet. Add a Monday goal first.", "No goals found.");
+      return;
+    }
+
+    // group by weekStartDate
+    const byWeek = {};
+    for (const g of goals){
+      const wk = g.monday.weekStartDate;
+      byWeek[wk] = byWeek[wk] || [];
+      byWeek[wk].push(g);
+    }
+    const weeks = Object.keys(byWeek).sort().reverse();
+
+    let out = `Weekly Recap (generated ${new Date().toLocaleString()})\n\n`;
+
+    for (const wk of weeks){
+      const arr = byWeek[wk];
+      out += `Week Start: ${wk}\n`;
+      out += `Goals: ${arr.length}\n\n`;
+
+      for (const g of arr){
+        out += `GOAL: ${g.monday.goalTitle}\n`;
+        out += `Champion: ${g.monday.champion || "—"}\n`;
+        if (g.monday.description) out += `Overview: ${g.monday.description}\n`;
+
+        // Wednesday
+        const w = g.wednesday;
+        const wedDone = !!safeTrim(w.checkinSummary) || !!safeTrim(w.progressSummary) || !!w.checkinDate;
+        out += `Wednesday: ${wedDone ? "✔" : "—"}\n`;
+        if (w.checkinDate) out += `  Check-in Date: ${w.checkinDate}\n`;
+        if (w.checkinSummary) out += `  Check-in Summary: ${w.checkinSummary}\n`;
+        if (w.progressSummary) out += `  Progress: ${w.progressSummary}\n`;
+        out += `  Needs Adjustment: ${w.needsAdjustment || "No"}\n`;
+
+        // Friday
+        const f = g.friday;
+        const friDone = !!safeTrim(f.recapSummary) || !!safeTrim(f.accomplishments) || !!f.recapDate;
+        out += `Friday: ${friDone ? "✔" : "—"}\n`;
+        if (f.recapDate) out += `  Recap Date: ${f.recapDate}\n`;
+        if (f.accomplishments) out += `  Accomplishments: ${f.accomplishments}\n`;
+        if (f.recapSummary) out += `  Recap Summary: ${f.recapSummary}\n`;
+        if (f.carryoverItems) out += `  Carryover Items: ${f.carryoverItems}\n`;
+        if (f.teamLeaderFeedback) out += `  Team Leader Feedback: ${f.teamLeaderFeedback}\n`;
+
+        out += `\n`;
+      }
+      out += `— — —\n\n`;
+    }
+
+    showDialog("Weekly Recap", "Copy this into your Friday wrap-up / performance review notes.", out);
+  }
+
+  function resetAll(){
+    const ok = confirm("Reset everything? This clears all stored goals in this browser.");
+    if (!ok) return;
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(META_KEY);
+    render();
+  }
+
+  function render(){
+    const { goals, meta } = load();
+    els.lastSaved.textContent = meta.lastSaved ? `Saved: ${new Date(meta.lastSaved).toLocaleString()}` : "Not saved yet";
+    els.todayTag.textContent = new Date().toLocaleDateString(undefined, { weekday:"short", year:"numeric", month:"short", day:"2-digit" });
+
+    renderList(goals);
+    computeMetrics(goals);
+  }
+
+  // wire events
+  els.btnAdd.addEventListener("click", addMonday);
+  els.mTitle.addEventListener("keydown", (e)=>{ if (e.key==="Enter") addMonday(); });
+
+  ["fSearch","fWeek","fStatus"].forEach(id=>{
+    els[id].addEventListener("input", render);
+    els[id].addEventListener("change", render);
+  });
+
+  els.btnExport.addEventListener("click", exportJSON);
+  els.fileImport.addEventListener("change", (e)=>{
+    const f = e.target.files && e.target.files[0];
+    if (f) importJSONFile(f);
+  });
+  els.btnClear.addEventListener("click", resetAll);
+  els.btnRecap.addEventListener("click", generateWeeklyRecap);
+
+  els.dlgClose.addEventListener("click", ()=>els.dlg.close());
+  els.btnCopy.addEventListener("click", ()=>copyToClipboard(els.dlgContent.textContent));
+  els.btnDownload.addEventListener("click", ()=>downloadJSON(els.dlgContent.textContent));
+
+  // default week start to this Monday for convenience
+  els.mWeekStart.value = thisWeekMondayYMD();
+
+  render();
+})();
+</script>
+</body>
+</html>
